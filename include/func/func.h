@@ -1,5 +1,5 @@
-#ifndef _FUNCTION_H_
-#define _FUNCTION_H_
+#ifndef _FUNC_H_
+#define _FUNC_H_
 
 #include "Eigen/Core"
 
