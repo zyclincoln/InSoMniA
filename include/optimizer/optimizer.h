@@ -68,7 +68,7 @@ namespace zyclincoln{
 			while( _iter_info._current_iter < _iter_info._max_iter 
 				&& _iter_info._last_value - _iter_info._current_value > threshold){
 				// step1: decide direction
-				_object->grediant(_iter_info._current_point, _iter_info._current_direction);
+				_object->gradient(_iter_info._current_point, _iter_info._current_direction);
 				_iter_info._current_direction = -_iter_info._current_direction;
 
 				std::cerr << "step: " << _iter_info._current_iter << std::endl;
@@ -76,7 +76,7 @@ namespace zyclincoln{
 
 				// step2: decide step size
 				double value;
-				Eigen::VectorXd grediant;
+				Eigen::VectorXd gradient;
 
 				std::function<void(double, double&)> phi_func = [&object = _object, 
 					 			 &direction = _iter_info._current_direction, 
@@ -92,7 +92,7 @@ namespace zyclincoln{
 								   &point = _iter_info._current_point]
 								   (double alpha, double& derivative){
 								   		Eigen::VectorXd gred;
-								   		object->grediant(point + alpha*direction, gred);
+								   		object->gradient(point + alpha*direction, gred);
 								   		derivative = gred.dot(direction);
 								   };		
 

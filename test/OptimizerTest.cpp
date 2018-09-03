@@ -19,7 +19,7 @@ public:
 		return true;
 	}
 
-	bool grediant(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
+	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
 		assert(point.rows() == 2);
 		gradient.resize(2);
 		const double &x = point(0, 0);
@@ -37,7 +37,7 @@ int main(){
 
 	VectorXd initPoint;
 	initPoint.resize(2);
-	initPoint << 1.2, 1.2;
+	initPoint << -1.2, 1;
 	optimizer.initialize(initPoint);
 
 	VectorXd endPoint;
@@ -45,7 +45,7 @@ int main(){
 	endPoint.resize(2);
 	endPoint.setZero();
 
-	optimizer.solve(endPoint, endValue, 1e-20, 10000);
+	optimizer.solve(endPoint, endValue, 1e-20, 20000);
 
 	cerr << endPoint.transpose() << endl;
 	cerr << endValue << endl;
