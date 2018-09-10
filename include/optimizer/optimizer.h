@@ -6,6 +6,7 @@
 #include <iostream>
 #include <functional>
 #include "Eigen/Core"
+#include "Eigen/Dense"
 #include "func/func.h"
 #include "utility/line_search.h"
 
@@ -76,7 +77,6 @@ namespace zyclincoln{
 
 				// step2: decide step size
 				double value;
-				Eigen::VectorXd gradient;
 
 				std::function<void(double, double&)> phi_func = [&object = _object, 
 					 			 &direction = _iter_info._current_direction, 
@@ -111,7 +111,7 @@ namespace zyclincoln{
 					_iter_info._current_point + step_length * _iter_info._current_direction;
 
 				std::cerr << "current point: " << _iter_info._current_point.transpose() << std::endl;
-				std::cerr << "last value: " << _iter_info._last_value << std::endl;
+				// std::cerr << "last value: " << _iter_info._last_value << std::endl;
 				std::cerr << "current value: " << _iter_info._current_value << std::endl;
 			}
 
@@ -126,7 +126,71 @@ namespace zyclincoln{
 		template<>
 		bool optimizer<func<soc> >::solve(Eigen::VectorXd& end_point, double& end_value,
 							   const double threshold, const size_t max_iter){
-			return false;
+						_iter_info._max_iter = max_iter;
+			_iter_info._threshold = threshold;
+
+			while( _iter_info._current_iter < _iter_info._max_iter 
+				&& _iter_info._last_value - _iter_info._current_value > threshold){
+				// step1: decide direction
+				Eigen::MatrixXd hessian;
+				Eigen::VectorXd gradient;
+
+				_object->gradient(_iter_info._current_point, gradient);
+				_object->hessian(_iter_info._current_point, hessian);
+
+				_iter_info._current_direction = - hessian.inverse() * gradient;
+
+				std::cerr << "step: " << _iter_info._current_iter << std::endl;
+				std::cerr << "direction: " << _iter_info._current_direction.transpose() << std::endl;
+				// std::cerr << "hessian: " << hessian << std::endl;
+				// step2: decide step size
+				double value;
+				// Eigen::VectorXd gradient;
+
+				std::function<void(double, double&)> phi_func = [&object = _object, 
+					 			 &direction = _iter_info._current_direction, 
+					 			 &point = _iter_info._current_point] 
+								 (double alpha, double& value){
+								 	// std::cout << "eval point: " << (point + alpha*direction).transpose() << std::endl;
+									object->value(point + alpha*direction, value);
+									// std::cout << "eval: " << value << std::endl;
+								};
+
+				std::function<void(double, double&)> d_phi_func = [&object = _object,
+					 			   &direction = _iter_info._current_direction,
+								   &point = _iter_info._current_point]
+								   (double alpha, double& derivative){
+								   		Eigen::VectorXd gred;
+								   		object->gradient(point + alpha*direction, gred);
+								   		derivative = gred.dot(direction);
+								   };		
+
+				double step_length = line_search(value,
+					phi_func,
+					d_phi_func, 
+					std::numeric_limits<double>::max());
+
+				std::cerr << "step length: " << step_length << std::endl;
+
+				// step3: update status
+				_iter_info._current_iter++;
+				_iter_info._last_value = _iter_info._current_value;
+				_iter_info._current_value = value;
+				_iter_info._current_point = 
+					_iter_info._current_point + step_length * _iter_info._current_direction;
+
+				std::cerr << "current point: " << _iter_info._current_point.transpose() << std::endl;
+				// std::cerr << "last value: " << _iter_info._last_value << std::endl;
+				std::cerr << "current value: " << _iter_info._current_value << std::endl;
+			}
+
+			end_point = _iter_info._current_point;
+			end_value = _iter_info._current_value;
+			if(_iter_info._last_value - _iter_info._current_value < threshold)
+				return true;
+			else
+				return false;
+
 		}
 		
 		template<typename fc>

@@ -31,7 +31,6 @@ namespace zyclincoln{
 
 		double quadratic_interpolation(double v0, double v1, double d1){
 			double value = (v1 - v0)/d1;
-
 			// if d1 is too little
 			// assert(fabs(value) < 1e5);
 
