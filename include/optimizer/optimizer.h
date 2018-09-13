@@ -8,6 +8,7 @@
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "func/func.h"
+#include "utility/kkt_util.h"
 #include "utility/line_search.h"
 
 namespace zyclincoln{
@@ -30,13 +31,20 @@ namespace zyclincoln{
 				Eigen::VectorXd _current_direction;
 			} _iter_info;
 
+			std::vector<std::shared_ptr<func<foc>> > _eqc;
+
 		public:
 			optimizer(const std::shared_ptr<fc>& object);
+
+			optimizer(const std::shared_ptr<fc>& object,
+					 const std::vector<std::shared_ptr<func<foc>>>& eqc);
 
 			void initialize(const Eigen::VectorXd& init_point);
 
 			bool solve(Eigen::VectorXd& end_point, double& end_value,
 					   const double threshold, const size_t max_iter);
+
+			bool solve_eqc(Eigen::VectorXd& end_point, double& end_value);
 
 			~optimizer();
 		};
@@ -47,6 +55,14 @@ namespace zyclincoln{
 		
 		}
 		
+		template<typename fc>
+		optimizer<fc>::optimizer(const std::shared_ptr<fc>& object,
+			const std::vector<std::shared_ptr<func<foc>> >& eqc):
+			_object(object),
+			_eqc(eqc){
+
+		}
+
 		template<typename fc>
 		void optimizer<fc>::initialize(const Eigen::VectorXd& init_point){
 			_iter_info._current_point = init_point;
@@ -126,7 +142,7 @@ namespace zyclincoln{
 		template<>
 		bool optimizer<func<soc> >::solve(Eigen::VectorXd& end_point, double& end_value,
 							   const double threshold, const size_t max_iter){
-						_iter_info._max_iter = max_iter;
+			_iter_info._max_iter = max_iter;
 			_iter_info._threshold = threshold;
 
 			while( _iter_info._current_iter < _iter_info._max_iter 
@@ -192,6 +208,54 @@ namespace zyclincoln{
 				return false;
 
 		}
+		
+		// this method only solve qp with linear equal constraints
+		template<>
+		bool optimizer<func<soc> >::solve_eqc(Eigen::VectorXd& end_point, double& end_value){
+
+			Eigen::MatrixXd hessian;
+			_object->hessian(_iter_info._current_point, hessian);
+
+			// build kkt matrix
+			Eigen::MatrixXd kkt_matrix;
+			kkt_matrix.resize(hessian.rows() + _eqc.size(), hessian.cols() + _eqc.size());
+			kkt_matrix.setZero();
+
+			kkt_matrix.block(0, 0, hessian.rows(), hessian.cols()) = hessian;
+			Eigen::MatrixXd A;
+			build_A_from_eqc(_eqc, A);
+			
+			kkt_matrix.block(hessian.rows(), 0, _eqc.size(), hessian.cols()) = A;
+			kkt_matrix.block(0, hessian.cols(), hessian.rows(), _eqc.size()) = A.transpose();
+
+			// build g and h
+			Eigen::VectorXd g, h;
+			_object->gradient(_iter_info._current_point, g);
+			build_h_from_eqc(_eqc, _iter_info._current_point, h);
+			Eigen::VectorXd gh;
+			gh.resize(g.rows() + h.rows());
+			gh.segment(0, g.rows()) = g;
+			gh.segment(g.rows(), h.rows()) = h;
+
+			// solve kkt matrix
+			Eigen::VectorXd x;
+			x = kkt_matrix.inverse() * gh;
+
+			// check result
+			Eigen::VectorXd p, lambda;
+			p.resize(g.rows());
+			lambda.resize(h.rows());
+			
+			p = -x.segment(0, g.rows());
+			lambda = x.segment(g.rows(), h.rows());
+
+			_iter_info._current_point += p;
+			_object->value(_iter_info._current_point, _iter_info._current_value);
+			end_point = _iter_info._current_point;
+			end_value = _iter_info._current_value;
+			return true;
+		}
+
 		
 		template<typename fc>
 		optimizer<fc>::~optimizer() { }

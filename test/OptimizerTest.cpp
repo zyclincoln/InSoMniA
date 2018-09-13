@@ -28,6 +28,10 @@ public:
 		gradient(1, 0) = 200 * (y - x*x);
 		return true;
 	}
+
+	size_t dimension(){
+		return 2;
+	}
 };
 
 class Rosenbrock2 : public func<soc>{
@@ -61,6 +65,10 @@ public:
 		hessian(0, 1) = hessian(1, 0);
 		hessian(1, 1) = 200;
 		return true;
+	}
+
+	size_t dimension(){
+		return 2;
 	}
 };
 
