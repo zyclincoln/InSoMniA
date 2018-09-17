@@ -181,4 +181,6 @@ int main(){
 
 	cerr << "end point: " << endPoint.transpose() << endl;
 	cerr << "end value: " << endValue << endl;
+
+	assert(fabs(endValue - 0.8) < 1e-10);
 }

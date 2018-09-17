@@ -277,10 +277,6 @@ namespace zyclincoln{
 			_iter_info._threshold = threshold;
 
 			std::set<size_t> working_set_index;
-			{
-				// working_set_index.insert(2);
-				working_set_index.insert(4);
-			}
 
 			while(_iter_info._current_iter < _iter_info._max_iter 
 				&& _iter_info._last_value - _iter_info._current_value > threshold){
