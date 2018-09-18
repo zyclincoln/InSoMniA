@@ -117,5 +117,7 @@ int main(){
 	cerr << endPoint.transpose() << endl;
 	cerr << endValue << endl;
 
+	assert(fabs(endValue - (-3.5)) < 1e-10);
+
 	return 0;
 }
