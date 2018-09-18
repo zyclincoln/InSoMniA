@@ -9,42 +9,7 @@ using namespace zyclincoln::InSoMniA;
 using namespace Eigen;
 using namespace std;
 
-// class TestFunction : public func<soc>{
-// 	Eigen::MatrixXd _hessian;
-// 	Eigen::VectorXd _g;
-
-// public:
-// 	TestFunction(){
-// 		_hessian.resize(2, 2);
-// 		_hessian << 2, 0, 0, 2;
-// 		_g.resize(2);
-// 		_g << -2, -5;
-// 	}
-
-// 	bool value(const Eigen::VectorXd& point, double& value){
-// 		assert(point.rows() == 2);
-
-// 		value = 0.5 * point.transpose() * _hessian * point;
-// 		value += _g.transpose() * point + 7.25;
-// 	}
-
-// 	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-// 		assert(point.rows() == 2);
-// 		gradient.resize(2);
-
-// 		gradient = _hessian * point + _g;
-// 	}
-
-// 	bool hessian(const Eigen::VectorXd& point, Eigen::MatrixXd& hessian){
-// 		hessian.resize(2, 2);
-// 		hessian = _hessian;
-// 	}
-
-// 	size_t dimension(){return 2;}
-// };
-
 int main(){
-	// shared_ptr<func<soc> > objectFunction(new TestFunction());
 	MatrixXd obj_hessian;
 	obj_hessian.resize(2, 2);
 	obj_hessian << 2, 0, 0, 2;
