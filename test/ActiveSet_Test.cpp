@@ -38,17 +38,6 @@ int main(){
 	constants << 2, 6, 2, 0, 0;
 	build_foc_function_from_matrix(parameters, constants, 2, ieqc);
 
-	Eigen::VectorXd point;
-	point.resize(2);
-	point << 1, 1;
-
-	for(int i = 0; i < ieqc.size(); i++){
-		Eigen::VectorXd gradient;
-		double value;
-		ieqc[i]->value(point, value);
-		ieqc[i]->gradient(point, gradient);
-	}
-
 	optimizer<func<soc> > optimizer(objectFunction, eqc, ieqc);
 
 	VectorXd initPoint;
