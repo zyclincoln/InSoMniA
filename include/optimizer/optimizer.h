@@ -393,7 +393,12 @@ namespace zyclincoln{
 
 						double value;
 						(*iter)->value(_iter_info._current_point, value);
+
 						double c_alpha = -value / (gradient.transpose() * p);
+						
+						// std::cerr << "gradient: " << gradient.transpose() << std::endl;
+						// std::cerr << "value: " << value << std::endl;
+						// std::cerr << "c_alpha: " << c_alpha << std::endl;
 						assert(c_alpha > 0);
 						if(c_alpha < alpha){
 							alpha = c_alpha;

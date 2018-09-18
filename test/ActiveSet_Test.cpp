@@ -1,169 +1,88 @@
 #include <iostream>
 #include <memory>
 #include <cassert>
-#include "optimizer/optimizer.h"
 #include "Eigen/Core"
+#include "optimizer/optimizer.h"
+#include "utility/function_utility.h"
 
 using namespace zyclincoln::InSoMniA;
 using namespace Eigen;
 using namespace std;
 
-class TestFunction : public func<soc>{
-	Eigen::MatrixXd _hessian;
-	Eigen::VectorXd _g;
+// class TestFunction : public func<soc>{
+// 	Eigen::MatrixXd _hessian;
+// 	Eigen::VectorXd _g;
 
-public:
-	TestFunction(){
-		_hessian.resize(2, 2);
-		_hessian << 2, 0, 0, 2;
-		_g.resize(2);
-		_g << -2, -5;
-	}
+// public:
+// 	TestFunction(){
+// 		_hessian.resize(2, 2);
+// 		_hessian << 2, 0, 0, 2;
+// 		_g.resize(2);
+// 		_g << -2, -5;
+// 	}
 
-	bool value(const Eigen::VectorXd& point, double& value){
-		assert(point.rows() == 2);
+// 	bool value(const Eigen::VectorXd& point, double& value){
+// 		assert(point.rows() == 2);
 
-		value = 0.5 * point.transpose() * _hessian * point;
-		value += _g.transpose() * point + 7.25;
-	}
+// 		value = 0.5 * point.transpose() * _hessian * point;
+// 		value += _g.transpose() * point + 7.25;
+// 	}
 
-	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-		assert(point.rows() == 2);
-		gradient.resize(2);
+// 	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
+// 		assert(point.rows() == 2);
+// 		gradient.resize(2);
 
-		gradient = _hessian * point + _g;
-	}
+// 		gradient = _hessian * point + _g;
+// 	}
 
-	bool hessian(const Eigen::VectorXd& point, Eigen::MatrixXd& hessian){
-		hessian.resize(2, 2);
-		hessian = _hessian;
-	}
+// 	bool hessian(const Eigen::VectorXd& point, Eigen::MatrixXd& hessian){
+// 		hessian.resize(2, 2);
+// 		hessian = _hessian;
+// 	}
 
-	size_t dimension(){return 2;}
-};
-
-class C1 : public func<foc>{
-	Eigen::VectorXd _parameter;
-
-public:
-	C1(){
-		_parameter.resize(2);
-		_parameter << 1, -2;
-	}
-
-	bool value(const Eigen::VectorXd& point, double& value){
-		assert(point.rows() == 2);
-		value = _parameter.dot(point) + 2;
-	}
-
-	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-		gradient.resize(2);
-		gradient = _parameter;
-	}
-
-	size_t dimension(){return 2;}
-};
-
-class C2 : public func<foc>{
-	Eigen::VectorXd _parameter;
-
-public:
-	C2(){
-		_parameter.resize(2);
-		_parameter << -1, -2;
-	}
-
-	bool value(const Eigen::VectorXd& point, double& value){
-		assert(point.rows() == 2);
-		value = _parameter.dot(point) + 6;
-	}
-
-	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-		gradient.resize(2);
-		gradient = _parameter;
-	}
-
-	size_t dimension(){return 2;}
-};
-
-class C3 : public func<foc>{
-	Eigen::VectorXd _parameter;
-
-public:
-	C3(){
-		_parameter.resize(2);
-		_parameter << -1, 2;
-	}
-
-	bool value(const Eigen::VectorXd& point, double& value){
-		assert(point.rows() == 2);
-		value = _parameter.dot(point) + 2;
-	}
-
-	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-		gradient.resize(2);
-		gradient = _parameter;
-	}
-
-	size_t dimension(){return 2;}
-};
-
-class C4 : public func<foc>{
-	Eigen::VectorXd _parameter;
-
-public:
-	C4(){
-		_parameter.resize(2);
-		_parameter << 1, 0;
-	}
-
-	bool value(const Eigen::VectorXd& point, double& value){
-		assert(point.rows() == 2);
-		value = _parameter.dot(point);
-	}
-
-	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-		gradient.resize(2);
-		gradient = _parameter;
-	}
-
-	size_t dimension(){return 2;}
-};
-
-class C5 : public func<foc>{
-	Eigen::VectorXd _parameter;
-
-public:
-	C5(){
-		_parameter.resize(2);
-		_parameter << 0, 1;
-	}
-
-	bool value(const Eigen::VectorXd& point, double& value){
-		assert(point.rows() == 2);
-		value = _parameter.dot(point);
-	}
-
-	bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-		gradient.resize(2);
-		gradient = _parameter;
-	}
-
-	size_t dimension(){return 2;}
-};
-
+// 	size_t dimension(){return 2;}
+// };
 
 int main(){
-	shared_ptr<func<soc> > objectFunction(new TestFunction());
+	// shared_ptr<func<soc> > objectFunction(new TestFunction());
+	MatrixXd obj_hessian;
+	obj_hessian.resize(2, 2);
+	obj_hessian << 2, 0, 0, 2;
+
+	VectorXd obj_gradient;
+	obj_gradient.resize(2);
+	obj_gradient << -2, -5;
+
+	double obj_constant = 7.25;
+
+	shared_ptr<func<soc> > objectFunction = 
+		build_soc_function(obj_hessian, obj_gradient, obj_constant, 2);
 
 	vector<shared_ptr<func<foc>>> ieqc;
 	vector<shared_ptr<func<foc>>> eqc;
 
-	ieqc.push_back(shared_ptr<func<foc>>(new C1()));
-	ieqc.push_back(shared_ptr<func<foc>>(new C2()));
-	ieqc.push_back(shared_ptr<func<foc>>(new C3()));
-	ieqc.push_back(shared_ptr<func<foc>>(new C4()));
-	ieqc.push_back(shared_ptr<func<foc>>(new C5()));
+	Eigen::MatrixXd parameters;
+	parameters.resize(5, 2);
+	parameters << 1, -2,
+				  -1, -2,
+				  -1, 2,
+				  1, 0,
+				  0, 1;
+	Eigen::VectorXd constants;
+	constants.resize(5);
+	constants << 2, 6, 2, 0, 0;
+	build_foc_function_from_matrix(parameters, constants, 2, ieqc);
+
+	Eigen::VectorXd point;
+	point.resize(2);
+	point << 1, 1;
+
+	for(int i = 0; i < ieqc.size(); i++){
+		Eigen::VectorXd gradient;
+		double value;
+		ieqc[i]->value(point, value);
+		ieqc[i]->gradient(point, gradient);
+	}
 
 	optimizer<func<soc> > optimizer(objectFunction, eqc, ieqc);
 
