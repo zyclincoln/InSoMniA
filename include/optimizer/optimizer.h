@@ -9,6 +9,7 @@
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "func/func.h"
+#include "matrix_solver/KKT_solver.h"
 #include "utility/kkt_util.h"
 #include "utility/line_search.h"
 
@@ -296,51 +297,41 @@ namespace zyclincoln{
 				Eigen::MatrixXd hessian;
 				_object->hessian(_iter_info._current_point, hessian);
 
-				Eigen::MatrixXd kkt_matrix;
-				kkt_matrix.resize(hessian.rows() + _eqc.size() + working_set_index.size(),
-								  hessian.cols() + _eqc.size() + working_set_index.size());
-				kkt_matrix.setZero();
-				kkt_matrix.block(0, 0, hessian.rows(), hessian.cols()) = hessian;
-				// std::cout << "kkt matrix: " << std::endl << kkt_matrix << std::endl;
-				
+				Eigen::MatrixXd A;
+				A.resize(_eqc.size() + working_set_index.size(), hessian.cols());
+
 				if(_eqc.size() > 0){
 					Eigen::MatrixXd A1;
 					build_A_from_eqc(_eqc, A1);
-					kkt_matrix.block(hessian.rows(), 0, _eqc.size(), hessian.cols()) = A1;
-					kkt_matrix.block(0, hessian.cols(), hessian.rows(), _eqc.size()) = A1.transpose();
+					A.block(0, 0, _eqc.size(), hessian.cols()) = A1;	
 				}
 				
 				if(working_set_index.size() > 0){
 					Eigen::MatrixXd A2;
 					build_A_from_workingset(_ieqc, working_set_index, A2);
-					kkt_matrix.block(hessian.rows() + _eqc.size(), 0, working_set_index.size(), hessian.cols()) = A2;
-					kkt_matrix.block(0, hessian.cols() + _eqc.size(), hessian.rows(), working_set_index.size()) = A2.transpose();
+					A.block(_eqc.size(), 0, working_set_index.size(), hessian.cols()) = A2;
 				}
-				// std::cout << "kkt matrix: " << std::endl << kkt_matrix << std::endl;
 
 				Eigen::VectorXd g;
 				_object->gradient(_iter_info._current_point, g);
-				Eigen::VectorXd h1;
+				
+				Eigen::VectorXd h;
+				h.resize(A.rows());
+
 				if(_eqc.size() > 0){
+					Eigen::VectorXd h1;
 					build_h_from_eqc(_eqc, _iter_info._current_point, h1);
+					h.segment(0, _eqc.size()) = h1;
 				}
-				Eigen::VectorXd h2;
 				if(working_set_index.size() > 0){
+					Eigen::VectorXd h2;
 					build_h_from_workingset(_ieqc, working_set_index, _iter_info._current_point, h2);
+					h.segment(_eqc.size(), working_set_index.size()) = h2;
 				}
 
-				Eigen::VectorXd gh;
-				gh.resize(g.rows() + _eqc.size() + working_set_index.size());
-				gh.segment(0, g.rows()) = g;
-				// std::cout << "gh: " << gh.transpose() << std::endl;
-				gh.segment(g.rows(), _eqc.size()) = h1;
-				if(working_set_index.size() > 0){
-					gh.segment(g.rows() + _eqc.size(), working_set_index.size()) = h2;
-				}
-				// std::cout << "kkt matrix: " << std::endl << kkt_matrix << std::endl;
 				Eigen::VectorXd x; 
-				x = kkt_matrix.inverse() *gh;
-				// std::cout << "gh: " << gh.transpose() << std::endl;
+				trival_kkt_solver(hessian, A, g, h, x);
+
 				Eigen::VectorXd p, lambda;
 				p.resize(g.rows());
 				lambda.resize(x.rows() - g.rows());
