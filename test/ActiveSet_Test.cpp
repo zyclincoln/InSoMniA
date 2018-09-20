@@ -20,7 +20,7 @@ namespace {
         virtual void TearDown(){}
 	};
 
-	TEST_F(ActiveSet_Test, OptimizeSucceed) {
+	TEST_F(ActiveSet_Test, TestActiveSet) {
 		MatrixXd obj_hessian;
 		obj_hessian.resize(2, 2);
 		obj_hessian << 2, 0, 0, 2;
@@ -66,7 +66,7 @@ namespace {
 		cerr << "end point: " << endPoint.transpose() << endl;
 		cerr << "end value: " << endValue << endl;
 	
-		EXPECT_LE(fabs(endValue - 0.8), 1e-10);		
+		ASSERT_LE(fabs(endValue - 0.8), 1e-10);		
 	}
 }
 

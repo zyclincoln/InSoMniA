@@ -32,11 +32,6 @@ namespace zyclincoln{
 			vector<Eigen::VectorXd> candidate {g, h};
 			merge_vector(candidate, gh);
 
-			// gh.resize(g.rows() + h.rows());
-
-			// gh.segment(0, g.rows()) = g;
-			// gh.segment(g.rows(), h.rows()) = h;
-
 			x.resize(g.rows() + h.rows());
 			x = kkt_matrix.inverse() * gh;
 
@@ -63,7 +58,7 @@ namespace zyclincoln{
 			int shift = g.rows();
 			for(auto i = A.cbegin(); i != A.cend(); i++){
 				kkt_triplet.push_back(Eigen::Triplet<double>(i->row()+shift, i->col(), i->value()));
-				kkt_triplet.push_back(Eigen::Triplet<double>(i->col()+shift, i->row(), i->value()));
+				kkt_triplet.push_back(Eigen::Triplet<double>(i->col(), i->row()+shift, i->value()));
 			}
 
 			kkt_matrix.setFromTriplets(kkt_triplet.begin(), kkt_triplet.end());

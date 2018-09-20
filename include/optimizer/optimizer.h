@@ -54,7 +54,8 @@ namespace zyclincoln{
 			bool solve_eqc(Eigen::VectorXd& end_point, double& end_value);
 
 			bool solve_active_set(Eigen::VectorXd& end_point, double& end_value,
-						const double threshold, const size_t max_iter);
+						const double threshold, const size_t max_iter,
+						const bool sparse = false);
 
 			~optimizer();
 		};
@@ -273,7 +274,8 @@ namespace zyclincoln{
 
 		template<>
 		bool optimizer<func<soc> >::solve_active_set(Eigen::VectorXd& end_point, double& end_value,
-													const double threshold, const size_t max_iter){
+													const double threshold, const size_t max_iter,
+													const bool sparse){
 			_iter_info._max_iter = max_iter;
 			_iter_info._threshold = threshold;
 
@@ -294,29 +296,11 @@ namespace zyclincoln{
 					std::cerr << "current_value: " << _iter_info._current_value << std::endl;
 				}
 
-				Eigen::MatrixXd hessian;
-				_object->hessian(_iter_info._current_point, hessian);
-
-				Eigen::MatrixXd A;
-				A.resize(_eqc.size() + working_set_index.size(), hessian.cols());
-
-				if(_eqc.size() > 0){
-					Eigen::MatrixXd A1;
-					build_A_from_eqc(_eqc, A1);
-					A.block(0, 0, _eqc.size(), hessian.cols()) = A1;	
-				}
-				
-				if(working_set_index.size() > 0){
-					Eigen::MatrixXd A2;
-					build_A_from_workingset(_ieqc, working_set_index, A2);
-					A.block(_eqc.size(), 0, working_set_index.size(), hessian.cols()) = A2;
-				}
-
 				Eigen::VectorXd g;
 				_object->gradient(_iter_info._current_point, g);
 				
 				Eigen::VectorXd h;
-				h.resize(A.rows());
+				h.resize(_eqc.size() + working_set_index.size());
 
 				if(_eqc.size() > 0){
 					Eigen::VectorXd h1;
@@ -329,8 +313,41 @@ namespace zyclincoln{
 					h.segment(_eqc.size(), working_set_index.size()) = h2;
 				}
 
-				Eigen::VectorXd x; 
-				trival_kkt_solver(hessian, A, g, h, x);
+				Eigen::VectorXd x;
+
+				if(sparse){
+					std::vector<Eigen::Triplet<double>> hessian;
+					_object->hessian_sparse(_iter_info._current_point, hessian);
+					
+					std::vector<Eigen::Triplet<double>> A;
+					if(_eqc.size() > 0)
+						build_sparse_A_from_eqc(_eqc, A);
+					if(working_set_index.size() > 0)
+						build_sparse_A_from_workingset(_ieqc, working_set_index, A, _eqc.size());
+					
+					sparse_factor_kkt_solver(hessian, A, g, h, x);
+				}
+				else{
+					Eigen::MatrixXd hessian;
+					_object->hessian(_iter_info._current_point, hessian);
+	
+					Eigen::MatrixXd A;
+					A.resize(_eqc.size() + working_set_index.size(), hessian.cols());
+	
+					if(_eqc.size() > 0){
+						Eigen::MatrixXd A1;
+						build_A_from_eqc(_eqc, A1);
+						A.block(0, 0, _eqc.size(), hessian.cols()) = A1;	
+					}
+					
+					if(working_set_index.size() > 0){
+						Eigen::MatrixXd A2;
+						build_A_from_workingset(_ieqc, working_set_index, A2);
+						A.block(_eqc.size(), 0, working_set_index.size(), hessian.cols()) = A2;
+					}
+
+					trival_kkt_solver(hessian, A, g, h, x);
+				}
 
 				Eigen::VectorXd p, lambda;
 				p.resize(g.rows());
@@ -377,8 +394,6 @@ namespace zyclincoln{
 							continue;
 						Eigen::VectorXd gradient;
 						(*iter)->gradient(_iter_info._current_point, gradient);
-						// std::cout << "gradient: " << gradient.transpose() << std::endl;
-						// std::cout << "gradient value decrease: " << gradient.transpose() * p << std::endl;
 						if(gradient.transpose() * p >= 0)
 							continue;
 
@@ -387,9 +402,6 @@ namespace zyclincoln{
 
 						double c_alpha = -value / (gradient.transpose() * p);
 						
-						// std::cerr << "gradient: " << gradient.transpose() << std::endl;
-						// std::cerr << "value: " << value << std::endl;
-						// std::cerr << "c_alpha: " << c_alpha << std::endl;
 						assert(c_alpha > 0);
 						if(c_alpha < alpha){
 							alpha = c_alpha;
