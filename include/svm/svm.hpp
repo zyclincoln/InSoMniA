@@ -33,7 +33,7 @@ namespace zyclincoln{
 				_x(x), _y(y), _kernel(kernel), _C(C), _epsilon(epsilon){
 					_a.resize(x.cols());
 					_a.setZero();
-					_max_iterate_num = 1000;
+					_max_iterate_num = 10000;
 			}
 
 			double predict(const Eigen::VectorXd& x) const;

@@ -11,9 +11,10 @@ int main(){
 	x << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
 	Eigen::VectorXd y;
 	y.resize(10, 1);
-	y << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+	y << 2, 1, 3, 4, 5, 6, 7, 8, 10, 9;
+	// y << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
 
-	svr svr_instance(x, y, KernelType::linear, 10, 0.01);
+	svr svr_instance(x, y, KernelType::linear, 100, 1);
 	svr_instance.train();
 
 	for(int i = 0; i < 20; i++){
