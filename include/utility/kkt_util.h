@@ -128,7 +128,6 @@ namespace zyclincoln{
 			for(auto iter = working_set.begin(); 
 				iter != working_set.end(); 
 				iter++, i++ ){
-
 				ieqc[*iter]->value(point, h(i, 0));
 			}
 			return true;

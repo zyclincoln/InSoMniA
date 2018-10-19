@@ -71,7 +71,7 @@ namespace zyclincoln{
 			SparseLU<SparseMatrix<double>, COLAMDOrdering<int> > solver;
 			solver.analyzePattern(kkt_matrix);
 			solver.factorize(kkt_matrix);
-
+			std::cerr << "factorize result: " << solver.info() << std::endl;
 			x.resize(gh.rows());
 			x = solver.solve(gh);
 

@@ -55,7 +55,8 @@ namespace zyclincoln{
 
 			bool solve_active_set(Eigen::VectorXd& end_point, double& end_value,
 						const double threshold, const size_t max_iter,
-						const bool sparse = false);
+						const bool sparse = false, 
+						const std::set<size_t>& init_set = std::set<size_t>());
 
 			~optimizer();
 		};
@@ -275,30 +276,32 @@ namespace zyclincoln{
 		template<>
 		bool optimizer<func<soc> >::solve_active_set(Eigen::VectorXd& end_point, double& end_value,
 													const double threshold, const size_t max_iter,
-													const bool sparse){
+													const bool sparse, 
+													const std::set<size_t>& init_set){
 			_iter_info._max_iter = max_iter;
 			_iter_info._threshold = threshold;
 
-			std::set<size_t> working_set_index;
+			std::set<size_t> working_set_index = init_set;
 
 			while(_iter_info._current_iter < _iter_info._max_iter 
 				&& _iter_info._last_value - _iter_info._current_value > threshold){
 				// build kkt system from working set and rhs
 
-				{
+				// {
 					std::cerr << "iter: " << _iter_info._current_iter << std::endl;
+					std::cerr << "point: " << _iter_info._current_point.segment(0, 10).transpose() << std::endl;
 					std::cerr << "working_set: ";
 					for(auto iter = working_set_index.cbegin(); iter != working_set_index.cend(); iter++){
 						std::cerr << *iter << ", ";
 					}
-					std::cerr << std::endl;
-					std::cerr << "current_point: " << _iter_info._current_point.transpose() << std::endl;
+				// 	std::cerr << std::endl;
+				// 	std::cerr << "current_point: " << _iter_info._current_point.transpose() << std::endl;
+					std::cerr << "active set size: " << working_set_index.size() << std::endl;
 					std::cerr << "current_value: " << _iter_info._current_value << std::endl;
-				}
+				// }
 
 				Eigen::VectorXd g;
 				_object->gradient(_iter_info._current_point, g);
-				
 				Eigen::VectorXd h;
 				h.resize(_eqc.size() + working_set_index.size());
 
@@ -312,7 +315,6 @@ namespace zyclincoln{
 					build_h_from_workingset(_ieqc, working_set_index, _iter_info._current_point, h2);
 					h.segment(_eqc.size(), working_set_index.size()) = h2;
 				}
-
 				Eigen::VectorXd x;
 
 				if(sparse){
@@ -355,11 +357,9 @@ namespace zyclincoln{
 				p = -x.segment(0, g.rows());
 				lambda = x.segment(g.rows(), x.rows() - g.rows());
 				// std::cout << "p: " << p.transpose() << std::endl;
-
 				// check the length of k
 				if(p.norm() < 1e-10){
 				// if k is zero
-
 					// check if kkt parameter is satisfied
 					// if yes, return
 					// if no, remove one from working set
@@ -372,7 +372,6 @@ namespace zyclincoln{
 							min_iter = iter;
 						}
 					}
-
 					if(min_iter != working_set_index.end()){
 						working_set_index.erase(min_iter);
 					}
@@ -396,39 +395,48 @@ namespace zyclincoln{
 						(*iter)->gradient(_iter_info._current_point, gradient);
 						if(gradient.transpose() * p >= 0)
 							continue;
-
+				
 						double value;
 						(*iter)->value(_iter_info._current_point, value);
-
+						// std::cerr << "  value: " << value << std::endl;
 						double c_alpha = -value / (gradient.transpose() * p);
-						
+						// std::cerr << "  gradient: " << gradient.transpose() << std::endl;
+						// std::cerr << "  p: " << p.transpose() << std::endl;
+						// std::cerr << "  c_alpha: " << c_alpha << std::endl;
 						assert(c_alpha > 0);
 						if(c_alpha < alpha){
 							alpha = c_alpha;
 							constraint_iter = iter;
 						}
 					}
+					std::cerr << "alpha: " << alpha << std::endl;
+					Eigen::VectorXd gra;
+					double value;
+					(*constraint_iter)->gradient(_iter_info._current_point, gra);
+					(*constraint_iter)->value(_iter_info._current_point, value);
 
 					_iter_info._last_value = _iter_info._current_value;
 					_iter_info._current_point += alpha*p;
 
 					_object->value(_iter_info._current_point, _iter_info._current_value);
 
+					(*constraint_iter)->gradient(_iter_info._current_point, gra);
+					(*constraint_iter)->value(_iter_info._current_point, value);
 					if(alpha != 1){
 						working_set_index.insert(constraint_iter - _ieqc.begin());
 					}
 				}
 
-				{
-					std::cerr << "working_set: ";
-					for(auto iter = working_set_index.cbegin(); iter != working_set_index.cend(); iter++){
-						std::cerr << *iter << ", ";
-					}
-					std::cerr << std::endl;
-					std::cerr << "current_point: " << _iter_info._current_point.transpose() << std::endl;
-					std::cerr << "current_value: " << _iter_info._current_value << std::endl;
+				// {
+				// 	std::cerr << "working_set: ";
+				// 	for(auto iter = working_set_index.cbegin(); iter != working_set_index.cend(); iter++){
+				// 		std::cerr << *iter << ", ";
+				// 	}
+				// 	std::cerr << std::endl;
+				// 	std::cerr << "current_point: " << _iter_info._current_point.transpose() << std::endl;
+				// 	std::cerr << "current_value: " << _iter_info._current_value << std::endl;
 
-				}
+				// }
 				_iter_info._current_iter++;
 			}
 

@@ -22,7 +22,7 @@ namespace zyclincoln{
 		public:
 			virtual bool value(const Eigen::VectorXd& point, double& value) = 0;
 			virtual bool gradient(const Eigen::VectorXd& point, Eigen::VectorXd& gradient){
-				std::cerr << "[FATAL] sparse gradient is not implement" << std::endl;
+				std::cerr << "[FATAL] dense gradient is not implement" << std::endl;
 				assert(false);
 				return false;
 			}
@@ -49,7 +49,7 @@ namespace zyclincoln{
 			}
 
 			virtual bool hessian(const Eigen::VectorXd& point, Eigen::MatrixXd& hessian){
-				std::cerr << "[FATAL] sparse hessian is not implement" << std::endl;
+				std::cerr << "[FATAL] dense hessian is not implement" << std::endl;
 				assert(false);
 				return false;
 			}
